@@ -19,13 +19,16 @@ class Package:
     
     def read_subpackages(self, robot_data):
 
+        # current_position = 5
+
+        # while current_position < len(robot_data):
+
         subpackage_length = struct.unpack('>I', robot_data[5:9])[0]
         subpackage_type = struct.unpack('>B', robot_data[9:10])[0]
         subpackage_data = robot_data[5:subpackage_length+5]
 
         if self.type == 16:
             new_subpackage = SubPackage.create_subpackage(subpackage_data, subpackage_length, subpackage_type)
-            print(new_subpackage.subpackage_variables.isRobotPowerOn)
     
 class SubPackage:
     def __init__(self, subpackage_data, subpackage_length, subpackage_type):
@@ -35,7 +38,7 @@ class SubPackage:
     
     @classmethod
     def create_subpackage(cls, subpackage_data, subpackage_length, subpackage_type):
-        subclasses = {0: RobotModeData}
+        subclasses = {0: RobotModeData, 1: JointData}
         subclass = subclasses.get(subpackage_type)
         
         if subclass:
@@ -47,10 +50,15 @@ class RobotModeData(SubPackage):
     def __init__(self, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(subpackage_data, subpackage_length, subpackage_type)
 
-        format_string = '>Q????????BdddB'
-        unpacked_data = struct.unpack(format_string, subpackage_data[5:subpackage_length])
         self.subpackage_name = "Robot Mode Data"
-        self.subpackage_variables = RobotModeDataStructure._make(unpacked_data)
+        self.subpackage_variables = self.decode_subpackage_variables()
+    
+    def decode_subpackage_variables(self):
+        format_string = '>Q????????BdddB' # Variable data types within RobotModeData from UR spec.
+        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
+        subpackage_variables = RobotModeDataStructure._make(unpacked_data)
+        return subpackage_variables
+
 
 RobotModeDataStructure = namedtuple("RobotModeDataStructure", [
     "timestamp",
@@ -69,6 +77,28 @@ RobotModeDataStructure = namedtuple("RobotModeDataStructure", [
     "reserved"
 ])
 
+class JointData(SubPackage):
+    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+
+        self.subpackage_name = "Robot Mode Data"
+        self.subpackage_variables = self.decode_subpackage_variables()
+    
+    def decode_subpackage_variables(self):
+        format_string = '>Q????????BdddB' # Variable data types within RobotModeData from UR spec.
+        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
+        subpackage_variables = RobotModeDataStructure._make(unpacked_data)
+        return subpackage_variables
+
+JointData = namedtuple("JointData", [
+    "q_actual",
+    "q_target",
+    "qd_actual",
+    "I_actual",
+    "V_actual",
+    "T_motor",
+    "jointMode"
+])
     
     
 
