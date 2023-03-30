@@ -10,11 +10,6 @@ class Package:
         self.subpackage_list = []
         self.received_timestamp = datetime.now()
 
-        log = open('debug.log', mode='a')
-        if self.type not in (5, 16):
-            print(self.type, self.length)
-            print(f"type={self.type}, length={self.length}\ndata={self.robot_data}\n\n######################", file=log)
-
         if self.type == 16:
             self.read_subpackages(robot_data)
 
