@@ -2,52 +2,70 @@ import struct
 from collections import namedtuple
 from tabulate import tabulate
 
+
 class SubPackage:
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        self.package_type = package_type
         self.subpackage_length = subpackage_length
         self.subpackage_type = subpackage_type
         self.subpackage_data = subpackage_data
 
     @classmethod
-    def create_subpackage(cls, subpackage_data, subpackage_length, subpackage_type):
-        subclasses = {0: RobotModeData, 1: JointData, 2: ToolData, 3: MasterBoardData, 4: CartesianInfo, 7: ForceModeData,
-                      8: AdditionalInfo, 9: CalibrationData, 10: SafetyData, 11: ToolCommunicationInfo, 12: ToolModeInfo, 13: SingularityInfo}
-        subclass = subclasses.get(subpackage_type)
+    def create_subpackage(cls, package_type, subpackage_data, subpackage_length, subpackage_type):
+        subclasses = {
+            (16, 0): RobotModeData,
+            (16, 1): JointData,
+            (16, 2): ToolData,
+            (16, 3): MasterBoardData,
+            (16, 4): CartesianInfo,
+            (16, 5): KinematicsInfo,
+            (16, 6): ConfigurationData,
+            (16, 7): ForceModeData,
+            (16, 8): AdditionalInfo,
+            (16, 9): CalibrationData,
+            (16, 10): SafetyData,
+            (16, 11): ToolCommunicationInfo,
+            (16, 12): ToolModeInfo,
+            (16, 13): SingularityInfo
+        }
+        subclass = subclasses.get((package_type, subpackage_type))
 
         if subclass:
-            return subclass(subpackage_data, subpackage_length, subpackage_type)
+            return subclass(package_type, subpackage_data, subpackage_length, subpackage_type)
         else:
-            return cls(subpackage_data, subpackage_length, subpackage_type)
-        
+            return cls(package_type, subpackage_data, subpackage_length, subpackage_type)
+
+    def decode_subpackage_variables(self):
+        unpacked_data = struct.unpack(
+            self.format_string, self.subpackage_data[5:self.subpackage_length])
+        subpackage_variables = self.Structure._make(unpacked_data)
+        return subpackage_variables
+
     def __str__(self):
         # Create a list of tuples containing variable names and their corresponding values
-        variables = [(name, getattr(self.subpackage_variables, name)) for name in self.subpackage_variables._fields]
+        variables = [(name, getattr(self.subpackage_variables, name))
+                     for name in self.subpackage_variables._fields]
 
         # Use the tabulate library to create a table with the variable names and values
-        table = tabulate(variables, headers=["Variable", "Value"], tablefmt="grid")
+        table = tabulate(variables, headers=[
+                         "Variable", "Value"], tablefmt="grid")
 
         # Return the formatted table as a string
         return f"{self.subpackage_name}:\n{table}\n\n"
 
 
 class RobotModeData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
-
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Robot Mode Data"
+        self.format_string = '>Q????????BdddB'
+        self.Structure = RobotModeDataStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-        
-
-    def decode_subpackage_variables(self):
-        format_string = '>Q????????BdddB'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = RobotModeDataStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class JointData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Joint Data"
         self.subpackage_variables = self.decode_subpackage_variables()
@@ -62,7 +80,8 @@ class JointData(SubPackage):
         for i in range(6):
 
             # Decode data for ith joint
-            unpacked_data = struct.unpack(format_string, self.subpackage_data[first_joint_byte:last_joint_byte])
+            unpacked_data = struct.unpack(
+                format_string, self.subpackage_data[first_joint_byte:last_joint_byte])
             ith_joint = JointDataStructure._make(unpacked_data)
 
             # Add ith joint to list
@@ -72,16 +91,18 @@ class JointData(SubPackage):
             last_joint_byte += 41
 
         return joint_data_list
-    
+
     def __str__(self):
         # Convert each namedtuple to a dictionary and store them in a list
-        subpackage_variables_dicts = [joint_data._asdict() for joint_data in self.subpackage_variables]
+        subpackage_variables_dicts = [
+            joint_data._asdict() for joint_data in self.subpackage_variables]
 
         # Extract the column headers (variable names) from the first dictionary
         headers = ["Joint"] + list(subpackage_variables_dicts[0].keys())
 
         # Convert the list of dictionaries to a list of lists for tabulate
-        rows = [[f"Joint {i+1}"] + list(joint_data.values()) for i, joint_data in enumerate(subpackage_variables_dicts)]
+        rows = [[f"Joint {i+1}"] + list(joint_data.values())
+                for i, joint_data in enumerate(subpackage_variables_dicts)]
 
         # Use tabulate to format the table
         table = tabulate(rows, headers=headers, tablefmt="grid")
@@ -91,145 +112,159 @@ class JointData(SubPackage):
 
 
 class CartesianInfo(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Cartesian Info"
+        self.format_string = '>dddddddddddd'
+        self.Structure = CartesianInfoStructure
         self.subpackage_variables = self.decode_subpackage_variables()
 
-    def decode_subpackage_variables(self):
-        format_string = '>dddddddddddd'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = CartesianInfoStructure._make(unpacked_data)
-        return subpackage_variables
 
 class CalibrationData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Calibration Data"
+        self.format_string = '>dddddd'
+        self.Structure = CalibrationDataStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-
-    def decode_subpackage_variables(self):
-        format_string = '>dddddd'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = CalibrationDataStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class MasterBoardData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Master Board Data"
         self.subpackage_variables = self.decode_subpackage_variables()
 
     def decode_subpackage_variables(self):
         format_string = '>IIBBddBBddffffBBB'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:68])
+        unpacked_data = struct.unpack(
+            format_string, self.subpackage_data[5:68])
 
         if unpacked_data[16] == 0:
             unpacked_data += ("Not used", "Not used", "Not used", "Not used")
             format_string = '>IBBB'
-            unpacked_data += struct.unpack(format_string, self.subpackage_data[68:])
+            unpacked_data += struct.unpack(format_string,
+                                           self.subpackage_data[68:])
         else:
             format_string = '>IIFFIBBB'
-            unpacked_data += struct.unpack(format_string, self.subpackage_data[68:])
+            unpacked_data += struct.unpack(format_string,
+                                           self.subpackage_data[68:])
 
         subpackage_variables = MasterboardDataStructure._make(unpacked_data)
         return subpackage_variables
 
 
 class ToolData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Tool Data"
+        self.format_string = '>BBddfBffB'
+        self.Structure = ToolDataStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-
-    def decode_subpackage_variables(self):
-        format_string = '>BBddfBffB'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = ToolDataStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class ForceModeData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Force Mode Data"
+        self.format_string = '>ddddddd'
+        self.Structure = ForceModeDataStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-
-    def decode_subpackage_variables(self):
-        format_string = '>ddddddd'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = ForceModeDataStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class AdditionalInfo(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
 
         self.subpackage_name = "Additional Info"
+        self.format_string = '>B??B'
+        self.Structure = AdditionalInfoStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-
-    def decode_subpackage_variables(self):
-        format_string = '>B??B'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = AdditionalInfoStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class SafetyData(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Safety Data"
-        self.subpackage_variables = SafetyDataStructure(Message="Subpackage is for internal UR operations; nothing to see here.")
-    
+        self.subpackage_variables = SafetyDataStructure(
+            Message="Subpackage is for internal UR operations; nothing to see here.")
+
 
 class ToolCommunicationInfo(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Tool Communication Info"
+        self.format_string = '>?IIIff'
+        self.Structure = ToolCommunicationInfoStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-
-    def decode_subpackage_variables(self):
-        format_string = '>?IIIff'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = ToolCommunicationInfoStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class ToolModeInfo(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Tool Mode Info"
+        self.format_string = '>BBB'
+        self.Structure = ToolModeInfoStructure
         self.subpackage_variables = self.decode_subpackage_variables()
-
-    def decode_subpackage_variables(self):
-        format_string = '>BBB'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = ToolModeInfoStructure._make(unpacked_data)
-        return subpackage_variables
 
 
 class SingularityInfo(SubPackage):
-    def __init__(self, subpackage_data, subpackage_length, subpackage_type):
-        super().__init__(subpackage_data, subpackage_length, subpackage_type)
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Singularity Info"
+        self.format_string = '>BB'
+        self.Structure = SingularityInfoStructure
         self.subpackage_variables = self.decode_subpackage_variables()
 
-    def decode_subpackage_variables(self):
-        format_string = '>BB'
-        unpacked_data = struct.unpack(format_string, self.subpackage_data[5:self.subpackage_length])
-        subpackage_variables = SingularityInfoStructure._make(unpacked_data)
-        return subpackage_variables
+
+class ConfigurationData(SubPackage):
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
+        self.subpackage_name = "Configuration Data"
+        self.subpackage_variables = ConfigurationDataStructure(
+            Message="Not implemented yet.")
+
+
+class KinematicsInfo(SubPackage):
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
+        self.subpackage_name = "Kinematics Info"
+        self.subpackage_variables = KinematicsInfoStructure(
+            Message="Not implemented yet.")
 
 
 ########################### NAMED TUPLES ###########################
 
+ConfigurationDataStructure = namedtuple("ConfigurationDataStructure", [
+    "Message"
+    # "joint_min_limits",
+    # "joint_max_limits",
+    # "joint_max_speeds",
+    # "joint_max_accelerations",
+    # "v_joint_default",
+    # "a_joint_default",
+    # "v_tool_default",
+    # "a_tool_default",
+    # "eq_radius",
+    # "DHas",
+    # "Dhds"
+])
+
+
+KinematicsInfoStructure = namedtuple("KinematicsInfoStructure", [
+    "Message"
+    # "checksums",
+    # "DHthetas",
+    # "DHas",
+    # "Dhds",
+    # "Dhalphas",
+    # "calibration_status"
+])
 
 AdditionalInfoStructure = namedtuple("AdditionalInfoStructure", [
     "tpButtonState",

@@ -19,12 +19,12 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as clientSocket:
 
         robot_data = clientSocket.recv(4096)
         new_message = p.Package(robot_data)
-        print(new_message)
-        # string = ""
-        # for x in new_message.subpackage_list:
-        #     string += f"{x}"
-        # log = open("output.txt", "w")
-        # print(string, file=log)
+        # print(new_message)
+        string = ""
+        for x in new_message.subpackage_list:
+            string += f"{x}"
+        log = open("output.txt", "w")
+        print(string, file=log)
     
 
 
