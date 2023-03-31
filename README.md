@@ -1,4 +1,4 @@
-# README.md
+# UR Primary Client Python Library
 
 ### Overview
 This client is designed to connect to a Universal Robots' e-series cobot via the primary client interface. It receives messages, deserializes them into a human readable format, and writes the content to files.
@@ -33,7 +33,7 @@ Program demonstrates client curating robot state messages.
 2. Clone this repository into a directory of your choice with the following command:
      
    ```Console
-   git clone <URL>
+   git clone https://github.com/Shawn-Armstrong/UR_Primary_Client_Python_Library.git
    ```
 3. Curate packages by navigating inside the directory from a console and running the following command:
    
