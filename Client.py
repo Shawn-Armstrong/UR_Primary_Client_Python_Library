@@ -1,9 +1,16 @@
 import socket
 import Package as p
-from pprint import pprint
 import PackageWriter as pw
+import argparse
 
-HOST = socket.gethostbyname(socket.gethostname())
+# Parse command-line arguments
+parser = argparse.ArgumentParser(description="Client for receiving robot data")
+parser.add_argument("-i", "--ip_address", default=socket.gethostbyname(socket.gethostname()), help="IP address of the robot (default: local IP address)")
+parser.add_argument("-m", "--max_reports", type=int, default=10, help="Maximum number of reports to write (default: 10)")
+
+args = parser.parse_args()
+
+HOST = args.ip_address
 PORT = 30001
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as clientSocket:
@@ -16,7 +23,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as clientSocket:
     except socket.error as e:
         print(f"Could not connect to {HOST}:{PORT} Error: {e}")
 
-    writer = pw.PackageWriter()
+    writer = pw.PackageWriter(3)
     i = 0
     while True:
 

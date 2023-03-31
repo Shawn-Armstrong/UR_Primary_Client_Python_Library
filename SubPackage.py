@@ -33,7 +33,7 @@ class SubPackage:
         if subclass:
             return subclass(package_type, subpackage_data, subpackage_length, subpackage_type)
         else:
-            return cls(package_type, subpackage_data, subpackage_length, subpackage_type)
+            return UnknownSubPackage(package_type, subpackage_data, subpackage_length, subpackage_type)
 
     def decode_subpackage_variables(self):
         unpacked_data = struct.unpack(
@@ -238,7 +238,21 @@ class KinematicsInfo(SubPackage):
             Message="Not implemented yet.")
 
 
+# Fallback mechanism / graceful degradation
+# Implemented to preserve robustness and handle unexpected subpackages
+class UnknownSubPackage(SubPackage):
+    def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
+        super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
+        self.subpackage_name = f"UnknownSubPackage, type={subpackage_type}, length={subpackage_length}"
+        self.subpackage_variables = UnknownSubPackageStructure(
+            Message="Unknown subpackage")
+
 ########################### NAMED TUPLES ###########################
+
+
+UnknownSubPackageStructure = namedtuple("ConfigurationDataStructure", [
+    "Message"
+])
 
 ConfigurationDataStructure = namedtuple("ConfigurationDataStructure", [
     "Message"

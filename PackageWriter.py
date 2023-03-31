@@ -1,9 +1,11 @@
 import os
 import sys
+from collections import deque
 
 class PackageWriter:
 
-    def __init__(self):
+    def __init__(self, max_packages):
+        self.max_packages = max_packages
         output_directory = "output"
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
@@ -19,6 +21,7 @@ class PackageWriter:
             (25, os.path.join(output_directory, "program_state_message.txt"))
         ]
         self.package_counts = [(key, 0) for key, _ in self.file_paths]
+        self.package_deques = {key: deque(maxlen=self.max_packages) for key, _ in self.file_paths}
 
         # Clear the content of each file at the beginning of every execution
         for _, file_path in self.file_paths:
@@ -31,19 +34,22 @@ class PackageWriter:
         for index, (key, path) in enumerate(self.file_paths):
             if key == message_type:
                 file_path = path
-                # Increment the counter for the matching package type
-                self.package_counts[index] = (key, self.package_counts[index][1] + 1)
+                # Increment the counter for the matching package type only if the deque is not full
+                if len(self.package_deques[key]) < self.max_packages:
+                    self.package_counts[index] = (key, self.package_counts[index][1] + 1)
                 break
+
         if file_path:
-            with open(file_path, "a") as file:
-                file.write(f"{package}\n{'#' * 80}\n")
+            self.package_deques[message_type].append(f"{package}\n{'#' * 80}\n")
+            with open(file_path, "w") as file:
+                for pkg_str in self.package_deques[message_type]:
+                    file.write(pkg_str)
         else:
             print(f"Unknown message type: {message_type}")
-
+ 
         self.print_package_counts()
 
     def print_package_counts(self):
         sys.stdout.write("\r")
-        sys.stdout.write(f"RECEIVED: Package -1:{self.package_counts[0][1]}, Package 16:{self.package_counts[1][1]}, Package 20:{self.package_counts[2][1]}, Package 22:{self.package_counts[3][1]}, Package 5:{self.package_counts[4][1]}, Package 23:{self.package_counts[5][1]}, Package 24:{self.package_counts[6][1]}, Package 25:{self.package_counts[7][1]}")
+        sys.stdout.write(f"RECEIVED: {self.package_counts[0][0]}:{self.package_counts[0][1]}, {self.package_counts[1][0]}:{self.package_counts[1][1]}, {self.package_counts[2][0]}:{self.package_counts[2][1]}, {self.package_counts[3][0]}:{self.package_counts[3][1]}, {self.package_counts[4][0]}:{self.package_counts[4][1]}, {self.package_counts[5][0]}:{self.package_counts[5][1]}, {self.package_counts[6][0]}:{self.package_counts[6][1]}, {self.package_counts[7][0]}:{self.package_counts[7][1]}")
         sys.stdout.flush()
-    
