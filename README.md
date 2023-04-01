@@ -51,7 +51,7 @@ Default program arguments are as follows:
 ## Implementation Details
 
 ### Technical Overview
-Universal Robots provides a primary client interface, allowing external devices to connect with the cobot's software and facilitate the exchange of communication messages. The cobot's software periodically sends out serialized messages containing robot state information as outlined in their Primary / Secondary specification. In short, a sent message is a hexadecimal strings representing binary data that has robot parameters encoded into it. These strings are divided into sections, with the first section called the "package," starting at byte 0. All subsequent sections are referred to as "subpackages."
+Universal Robots provides a primary client interface, allowing external devices to connect with the cobot's software and facilitate the exchange of communication messages. The cobot's software periodically sends out serialized messages containing robot state information as outlined in their primary / secondary specification. In short, a sent message consists of a hexadecimal string representing binary data, with robot parameters encoded within it. These strings are divided into sections, with the first section called the "package," starting at byte 0 and all subsequent sections being "subpackages."
 
 This client is specifically designed to receive these messages, deserialize them, and write the content to files. The client's implementation consists of four main components: `Client.py`, `Package.py`, `SubPackage.py`, and `PackageWriter.py`.
 
@@ -59,7 +59,7 @@ This client is specifically designed to receive these messages, deserialize them
 This is the entry point of the program. It connects with the cobot, receives messages and uses them to instantiate a `Package` object. Afterwards, a `PackageWriter` object writes the `Package` to a file.
 
 #### `Package.py`
-This file defines the `Package` class. In principle, this is a container class designed to create, store and manage `SubPackages` also leveraging the relationship between them. `Package` employs a class factory pattern to instantiate `SubPackages`. 
+This file defines the `Package` class. In principle, this is a container class designed to create, store and manage `SubPackages` also leveraging the relationship between them. `Package` employs a class factory pattern defined in `SubPackage` to instantiate `Subpackage` objects.. 
 
 #### `SubPackage.py`
 This file defines the `SubPackage` class and its subclasses. `SubPackage` implements an inheritance hierarchy where every subclass is a subpackage defined in the primary / secondary specification. The hierarchy is designed around named tuples to facilitate table construction while taking advantage of polymorphism.
