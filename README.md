@@ -35,10 +35,10 @@ Program demonstrates client curating robot state messages.
    ```Console
    git clone https://github.com/Shawn-Armstrong/UR_Primary_Client_Python_Library.git
    ```
-3. Curate packages by navigating inside the directory from a console and running the following command:
+3. Curate packages by navigating inside the cloned directory `/client` from a console and running the following command:
    
    ```Console
-   python Client.py ip_address=YOUR_IP_ADDRESS max_reports=NUMBER_YOU_WANT_TO_CAPTURE_PER_PACKAGE
+   python client.py ip_address=YOUR_IP_ADDRESS max_reports=NUMBER_YOU_WANT_TO_CAPTURE_PER_PACKAGE
    ```
 
 ### Output & Behavior
@@ -53,18 +53,18 @@ Default program arguments are as follows:
 ### Technical Overview
 Universal Robots provides a primary client interface, allowing external devices to connect with the cobot's software and facilitate the exchange of communication messages. The cobot's software periodically sends out serialized messages containing robot state information as outlined in their primary / secondary specification. In short, a sent message consists of a hexadecimal string representing binary data, with robot parameters encoded within it. These strings are divided into sections, with the first section called the "package," starting at byte 0 and all subsequent sections being "subpackages."
 
-This client is specifically designed to receive these messages, deserialize them, and write the content to files. The client's implementation consists of four main components: `Client.py`, `Package.py`, `SubPackage.py`, and `PackageWriter.py`.
+This client is specifically designed to receive these messages, deserialize them, and write the content to files. The client's implementation consists of four main components: `client.py`, `package.py`, `subpackage.py`, and `packagewriter.py`.
 
-#### `Client.py`
+#### `client.py`
 This is the entry point of the program. It connects with the cobot, receives messages and uses them to instantiate a `Package` object. Afterwards, a `PackageWriter` object writes the `Package` to a file.
 
-#### `Package.py`
+#### `package.py`
 This file defines the `Package` class. In principle, this is a container class designed to create, store and manage `SubPackages` also leveraging the relationship between them. `Package` employs a class factory pattern defined in `SubPackage` to instantiate `Subpackage` objects.. 
 
-#### `SubPackage.py`
+#### `subpackage.py`
 This file defines the `SubPackage` class and its subclasses. `SubPackage` implements an inheritance hierarchy where every subclass is a subpackage defined in the primary / secondary specification. The hierarchy is designed around named tuples to facilitate table construction while taking advantage of polymorphism.
 
-#### `PackageWriter`
+#### `packagewriter`
 This file defines the `PackageWriter` class, which is essentially a writer class that utilizes data from `Package` objects to write to files. The class streamlines file handling by maintaining a separate text file for each package type defined in the specification and writing corresponding `Package` objects to the appropriate file.
 
 ## Development
@@ -72,6 +72,9 @@ This file defines the `PackageWriter` class, which is essentially a writer class
 ### Notices
 - This client was developed using a simulated e-series UR3e running PolyScope 5.13. As it is in the early stages of development, its results should be treated with caution and skepticism.
 - Currently, only robot state messages are supported.
+
+### Unit Tests
+- Directory `test` contains unit tests used to support test driven development. 
 
 ### Future Features
 - [ ] Implement package type 20.
