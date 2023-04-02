@@ -34,6 +34,7 @@ import sys
 from tabulate import tabulate
 from collections import deque
 from collections import namedtuple
+from datetime import datetime
 
 class PackageWriter:
 
@@ -103,20 +104,27 @@ class PackageWriter:
     
     def append_custom_report(self, package):
         self.update_custom_report(package)
+
+        # If custom_reports_deque is not defined, create it with maxlen equal to max_packages
+        if not hasattr(self, "custom_reports_deque"):
+            self.custom_reports_deque = deque(maxlen=self.max_packages)
         
-        # Prepare the table data
-        headers = ["Field Name", "Value"]
-        table_data = [[field, getattr(self.custom_report, field)] for field in self.custom_report._fields]
-        table_data.insert(0, headers)
+        # Prepare the table data with timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-4]
+        table_data = [timestamp] + [getattr(self.custom_report, field) for field in self.custom_report._fields]
 
-        # Tabulate the data
-        table = tabulate(table_data, headers='firstrow', tablefmt='grid')
+        # Append the table data to custom_reports_deque
+        self.custom_reports_deque.append(table_data)
 
-        # Write the table to the file
+        # Create headers
+        headers = ["Timestamp"] + list(self.custom_report._fields)
+
+        # Write the contents of custom_reports_deque to the file
         output_directory = "output"
         custom_report_path = os.path.join(output_directory, "custom_report.txt")
         with open(custom_report_path, "w") as file:
-            file.write(table)
+            file.write(tabulate(self.custom_reports_deque, headers=headers, tablefmt='grid'))
+
 
     def print_package_counts(self):
         sys.stdout.write("\r")

@@ -28,11 +28,9 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
-
 import struct
 from collections import namedtuple
 from tabulate import tabulate
-
 
 class SubPackage:
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
@@ -63,24 +61,42 @@ class SubPackage:
         subclass = subclasses.get((package_type, subpackage_type))
 
         if subclass:
-            return subclass(package_type, subpackage_data, subpackage_length, subpackage_type)
+            return subclass(
+                package_type,
+                subpackage_data,
+                subpackage_length,
+                subpackage_type
+            )
         else:
-            return UnknownSubPackage(package_type, subpackage_data, subpackage_length, subpackage_type)
+            return UnknownSubPackage(
+                package_type,
+                subpackage_data,
+                subpackage_length,
+                subpackage_type
+            )
 
     def decode_subpackage_variables(self):
         unpacked_data = struct.unpack(
-            self.format_string, self.subpackage_data[5:self.subpackage_length])
+            self.format_string,
+            self.subpackage_data[5:self.subpackage_length]
+        )
         subpackage_variables = self.Structure._make(unpacked_data)
+
         return subpackage_variables
 
     def __str__(self):
         # Create a list of tuples containing variable names and their corresponding values
-        variables = [(name, getattr(self.subpackage_variables, name))
-                     for name in self.subpackage_variables._fields]
+        variables = [
+            (name, getattr(self.subpackage_variables, name))
+            for name in self.subpackage_variables._fields
+        ]
 
         # Use the tabulate library to create a table with the variable names and values
-        table = tabulate(variables, headers=[
-                         "Variable", "Value"], tablefmt="grid")
+        table = tabulate(
+            variables,
+            headers=["Variable", "Value"],
+            tablefmt="grid"
+        )
 
         # Return the formatted table as a string
         return f"{self.subpackage_name}:\n{table}\n\n"
@@ -89,7 +105,6 @@ class SubPackage:
 class RobotModeData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Robot Mode Data"
         self.format_string = '>Q????????BdddB'
         self.Structure = RobotModeDataStructure
@@ -99,26 +114,26 @@ class RobotModeData(SubPackage):
 class JointData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-        
         self.subpackage_name = "Joint Data"
         self.format_string = '>dddffffBdddffffBdddffffBdddffffBdddffffBdddffffB'
         self.Structure = JointDataStructure
-        self.FlattenedJointData = namedtuple('FlattenedJointData', [f'Joint{i+1}_{field}' for i in range(6) for field in JointDataStructure._fields])
+        field_names = [f'Joint{i+1}_{field}' for i in range(6) for field in JointDataStructure._fields]
+        self.FlattenedJointData = namedtuple('FlattenedJointData', field_names)
         self.subpackage_variables = self.decode_subpackage_variables()
 
     def decode_subpackage_variables(self):
-
         single_joint_format_string = self.format_string[0:9]
         first_joint_byte = 5
         last_joint_byte = 46
-        
         flattened_data = []
 
         for i in range(6):
 
             # Decode data for ith joint
             unpacked_data = struct.unpack(
-                single_joint_format_string, self.subpackage_data[first_joint_byte:last_joint_byte])
+                single_joint_format_string,
+                self.subpackage_data[first_joint_byte:last_joint_byte]
+            )
 
             # Add the unpacked data to the flattened data list
             flattened_data.extend(unpacked_data)
@@ -158,7 +173,6 @@ class JointData(SubPackage):
 class CartesianInfo(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Cartesian Info"
         self.format_string = '>dddddddddddd'
         self.Structure = CartesianInfoStructure
@@ -168,7 +182,6 @@ class CartesianInfo(SubPackage):
 class CalibrationData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Calibration Data"
         self.format_string = '>dddddd'
         self.Structure = CalibrationDataStructure
@@ -178,7 +191,6 @@ class CalibrationData(SubPackage):
 class MasterBoardData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Master Board Data"
         self.subpackage_variables = self.decode_subpackage_variables()
 
@@ -190,12 +202,10 @@ class MasterBoardData(SubPackage):
         if unpacked_data[16] == 0:
             unpacked_data += ("Not used", "Not used", "Not used", "Not used")
             format_string = '>IBBB'
-            unpacked_data += struct.unpack(format_string,
-                                           self.subpackage_data[68:])
+            unpacked_data += struct.unpack(format_string, self.subpackage_data[68:])
         else:
             format_string = '>IIFFIBBB'
-            unpacked_data += struct.unpack(format_string,
-                                           self.subpackage_data[68:])
+            unpacked_data += struct.unpack(format_string, self.subpackage_data[68:])
 
         subpackage_variables = MasterboardDataStructure._make(unpacked_data)
         return subpackage_variables
@@ -204,7 +214,6 @@ class MasterBoardData(SubPackage):
 class ToolData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Tool Data"
         self.format_string = '>BBddfBffB'
         self.Structure = ToolDataStructure
@@ -214,7 +223,6 @@ class ToolData(SubPackage):
 class ForceModeData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Force Mode Data"
         self.format_string = '>ddddddd'
         self.Structure = ForceModeDataStructure
@@ -224,7 +232,6 @@ class ForceModeData(SubPackage):
 class AdditionalInfo(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
         self.subpackage_name = "Additional Info"
         self.format_string = '>B??B'
         self.Structure = AdditionalInfoStructure
@@ -292,8 +299,6 @@ class UnknownSubPackage(SubPackage):
             Message="Unknown subpackage")
 
 ########################### NAMED TUPLES ###########################
-
-
 UnknownSubPackageStructure = namedtuple("ConfigurationDataStructure", [
     "Message"
 ])
@@ -312,7 +317,6 @@ ConfigurationDataStructure = namedtuple("ConfigurationDataStructure", [
     # "DHas",
     # "Dhds"
 ])
-
 
 KinematicsInfoStructure = namedtuple("KinematicsInfoStructure", [
     "Message"
