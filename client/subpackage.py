@@ -89,6 +89,7 @@ class SubPackage:
 class RobotModeData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
+
         self.subpackage_name = "Robot Mode Data"
         self.format_string = '>Q????????BdddB'
         self.Structure = RobotModeDataStructure
@@ -98,43 +99,54 @@ class RobotModeData(SubPackage):
 class JointData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-
+        
         self.subpackage_name = "Joint Data"
+        self.format_string = '>dddffffBdddffffBdddffffBdddffffBdddffffBdddffffB'
+        self.Structure = JointDataStructure
+        self.FlattenedJointData = namedtuple('FlattenedJointData', [f'Joint{i+1}_{field}' for i in range(6) for field in JointDataStructure._fields])
         self.subpackage_variables = self.decode_subpackage_variables()
 
     def decode_subpackage_variables(self):
 
-        format_string = '>dddffffB'
+        single_joint_format_string = self.format_string[0:9]
         first_joint_byte = 5
         last_joint_byte = 46
-        joint_data_list = []
+        
+        flattened_data = []
 
         for i in range(6):
 
             # Decode data for ith joint
             unpacked_data = struct.unpack(
-                format_string, self.subpackage_data[first_joint_byte:last_joint_byte])
-            ith_joint = JointDataStructure._make(unpacked_data)
+                single_joint_format_string, self.subpackage_data[first_joint_byte:last_joint_byte])
 
-            # Add ith joint to list
-            joint_data_list.append(ith_joint)
+            # Add the unpacked data to the flattened data list
+            flattened_data.extend(unpacked_data)
 
             first_joint_byte = last_joint_byte
             last_joint_byte += 41
 
-        return joint_data_list
+        # Create a new named tuple with the flattened data
+        flattened_joint_data = self.FlattenedJointData._make(flattened_data)
+
+        return flattened_joint_data
 
     def __str__(self):
-        # Convert each namedtuple to a dictionary and store them in a list
-        subpackage_variables_dicts = [
-            joint_data._asdict() for joint_data in self.subpackage_variables]
+        # Extract the number of joints and fields per joint
+        num_joints = 6
+        fields_per_joint = len(JointDataStructure._fields)
 
-        # Extract the column headers (variable names) from the first dictionary
-        headers = ["Joint"] + list(subpackage_variables_dicts[0].keys())
+        # Create the headers for the table
+        headers = ["Joint"] + [field for field in JointDataStructure._fields]
 
-        # Convert the list of dictionaries to a list of lists for tabulate
-        rows = [[f"Joint {i+1}"] + list(joint_data.values())
-                for i, joint_data in enumerate(subpackage_variables_dicts)]
+        # Prepare the rows for the table
+        rows = []
+        for i in range(num_joints):
+            row = [f"Joint {i+1}"]
+            for j in range(fields_per_joint):
+                # Get the value of the field for each joint
+                row.append(getattr(self.subpackage_variables, f'Joint{i+1}_{JointDataStructure._fields[j]}'))
+            rows.append(row)
 
         # Use tabulate to format the table
         table = tabulate(rows, headers=headers, tablefmt="grid")
