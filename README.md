@@ -45,8 +45,11 @@ Program demonstrates client curating robot state messages.
 The client captures a specified number of packages, `max_reports`, for each package type and writes them to the end of their corresponding text files within the output directory. When the `max_reports` limit for a specific package type has been reached, the client will remove the oldest entry and add the newest incoming entry, maintaining a rolling buffer of the most recent packages. At the beginning of each execution, the text files are cleared to ensure a fresh start. The program can be terminated with a keyboard interrupt: <kbd>ctrl</kbd> + <kbd>c</kbd> .
 
 Default program arguments are as follows:
-  - `max_reports=10`
-  - `ip_address=<local ip address>`
+  - `--max_reports=10`
+  - `--ip_address=<local ip address>`
+
+### Custom Reports
+To enable custom reports, run `client.py --custom_report`. When enabled, the client will track every variable listed in `watch_list.txt` and report it in the `../output/custom_report.txt` file. Each variable should be on a separate line within the file and spelled exactly as they appear in their related output package file.
   
 ## Implementation Details
 
@@ -64,7 +67,7 @@ This file defines the `Package` class. In principle, this is a container class d
 #### `subpackage.py`
 This file defines the `SubPackage` class and its subclasses. `SubPackage` implements an inheritance hierarchy where every subclass is a subpackage defined in the primary / secondary specification. The hierarchy is designed around named tuples to facilitate table construction while taking advantage of polymorphism.
 
-#### `packagewriter`
+#### `packagewriter.py`
 This file defines the `PackageWriter` class, which is essentially a writer class that utilizes data from `Package` objects to write to files. The class streamlines file handling by maintaining a separate text file for each package type defined in the specification and writing corresponding `Package` objects to the appropriate file.
 
 ## Development
