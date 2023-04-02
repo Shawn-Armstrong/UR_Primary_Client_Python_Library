@@ -31,6 +31,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
 import sys
+from tabulate import tabulate
 from collections import deque
 from collections import namedtuple
 
@@ -102,10 +103,20 @@ class PackageWriter:
     
     def append_custom_report(self, package):
         self.update_custom_report(package)
-        with open("custom_report.txt", "w") as file:
-            file.write(str(self.custom_report))
+        
+        # Prepare the table data
+        headers = ["Field Name", "Value"]
+        table_data = [[field, getattr(self.custom_report, field)] for field in self.custom_report._fields]
+        table_data.insert(0, headers)
 
+        # Tabulate the data
+        table = tabulate(table_data, headers='firstrow', tablefmt='grid')
 
+        # Write the table to the file
+        output_directory = "output"
+        custom_report_path = os.path.join(output_directory, "custom_report.txt")
+        with open(custom_report_path, "w") as file:
+            file.write(table)
 
     def print_package_counts(self):
         sys.stdout.write("\r")
@@ -125,15 +136,13 @@ class PackageWriter:
 
         # Iterate through the objects
         for subpackage in package.subpackage_list:
-            # Check if subpackage_variables is a named tuple
-            if isinstance(subpackage.subpackage_variables, tuple) and hasattr(subpackage.subpackage_variables, '_fields'):
-                # Get the set of fields in the object's subpackage_variables named tuple
-                subpackage_variable_fields = set(subpackage.subpackage_variables._fields)
 
-                # Find the intersection of fields (shared fields)
-                shared_fields = custom_reports_fields.intersection(subpackage_variable_fields)
+            # Get the set of fields in the object's subpackage_variables named tuple
+            subpackage_variable_fields = set(subpackage.subpackage_variables._fields)
 
-                # Update the shared fields in the CustomReportsStructure instance
-                self.custom_report = self.custom_report._replace(**{field: getattr(subpackage.subpackage_variables, field) for field in shared_fields})
-            else:
-                x = 1
+            # Find the intersection of fields (shared fields)
+            shared_fields = custom_reports_fields.intersection(subpackage_variable_fields)
+
+            # Update the shared fields in the CustomReportsStructure instance
+            self.custom_report = self.custom_report._replace(**{field: getattr(subpackage.subpackage_variables, field) for field in shared_fields})
+
