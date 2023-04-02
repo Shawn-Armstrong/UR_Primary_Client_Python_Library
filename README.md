@@ -49,7 +49,7 @@ Default program arguments are as follows:
   - `--ip_address=<local ip address>`
 
 ### Custom Reports
-To enable custom reports, run `client.py --custom_report`. When enabled, the client will track every variable listed in `watch_list.txt` and report it in the `../output/custom_report.txt` file. Each variable should be on a separate line within the file and spelled exactly as they appear in their related output package file.
+To enable custom reports, run `client.py --custom_report`. When enabled, the client will track every variable listed in `watch_list.txt` and report it in the `../output/custom_report.txt` file. Each variable should be on a separate line within the file and spelled exactly as they appear in their related output package file. Custom reports capture a specified number of entries, `max_reports`, in a single table. When a new entry is added, the oldest entry will be discarded if the table has reached its maximum capacity. Every entry contains the last observed value; if a value has yet to be received, its corresponding field in the table will remain empty. At the beginning of each execution `custom_report.txt` is cleared to ensure a fresh start. 
   
 ## Implementation Details
 
@@ -62,7 +62,7 @@ This client is specifically designed to receive these messages, deserialize them
 This is the entry point of the program. It connects with the cobot, receives messages and uses them to instantiate a `Package` object. Afterwards, a `PackageWriter` object writes the `Package` to a file.
 
 #### `package.py`
-This file defines the `Package` class. In principle, this is a container class designed to create, store and manage `SubPackages` also leveraging the relationship between them. `Package` employs a class factory pattern defined in `SubPackage` to instantiate `Subpackage` objects.. 
+This file defines the `Package` class. In principle, this is a container class designed to create, store and manage `SubPackages` also leveraging the relationship between them. `Package` employs a class factory pattern defined in `SubPackage` to instantiate `SubPackage` objects.. 
 
 #### `subpackage.py`
 This file defines the `SubPackage` class and its subclasses. `SubPackage` implements an inheritance hierarchy where every subclass is a subpackage defined in the primary / secondary specification. The hierarchy is designed around named tuples to facilitate table construction while taking advantage of polymorphism.
