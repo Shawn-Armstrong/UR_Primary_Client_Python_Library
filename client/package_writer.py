@@ -31,16 +31,30 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
 import sys
+from tabulate import tabulate
 from collections import deque
+from collections import namedtuple
 
 class PackageWriter:
 
-    def __init__(self, max_packages):
+    def __init__(self, max_packages, custom_report):
+        
         self.max_packages = max_packages
+        self.custom_report = None
+        self.custom_reports_enabled = custom_report
+
+        # If custom reports is enabled, create container for desired variables.
+        if self.custom_reports_enabled == True:
+            variables = self.read_watch_list()
+            CustomReportsStructure = namedtuple('CustomReportsStructure', variables)
+            self.custom_report = CustomReportsStructure(*([None] * len(variables))) 
+
+        # Ensure output directory exists. 
         output_directory = "output"
         if not os.path.exists(output_directory):
             os.makedirs(output_directory)
 
+        # Create a file for every package type in output directory.
         self.file_paths = [
             (-1, os.path.join(output_directory, "disconnect.txt")),
             (16, os.path.join(output_directory, "robot_state.txt")),
@@ -51,25 +65,31 @@ class PackageWriter:
             (24, os.path.join(output_directory, "safety_compliance_tolerances_message.txt")),
             (25, os.path.join(output_directory, "program_state_message.txt"))
         ]
-        self.package_counts = [(key, 0) for key, _ in self.file_paths]
-        self.package_deques = {key: deque(maxlen=self.max_packages) for key, _ in self.file_paths}
-
-        # Clear the content of each file at the beginning of every execution
         for _, file_path in self.file_paths:
             with open(file_path, "w") as file:
                 file.write("")
 
+        # Manages user defined capacity constraints.
+        self.package_counts = [(key, 0) for key, _ in self.file_paths]
+        self.package_deques = {key: deque(maxlen=self.max_packages) for key, _ in self.file_paths}
+
+
+    # Function writes all subpackages within `package` to file `packagetype`.txt .
     def append_package_to_file(self, package):
         message_type = package.type
         file_path = None
+
+        # Identifies the file related to `package.package_type`.
         for index, (key, path) in enumerate(self.file_paths):
             if key == message_type:
                 file_path = path
-                # Increment the counter for the matching package type only if the deque is not full
+
+                # Increment the counter for the matching package type only if the deque is not full.
                 if len(self.package_deques[key]) < self.max_packages:
                     self.package_counts[index] = (key, self.package_counts[index][1] + 1)
                 break
 
+        # Performs write operation to file. 
         if file_path:
             self.package_deques[message_type].append(f"{package}\n{'#' * 80}\n")
             with open(file_path, "w") as file:
@@ -77,10 +97,52 @@ class PackageWriter:
                     file.write(pkg_str)
         else:
             print(f"Unknown message type: {message_type}")
- 
+
+        # Displays current count to console.
         self.print_package_counts()
+    
+    def append_custom_report(self, package):
+        self.update_custom_report(package)
+        
+        # Prepare the table data
+        headers = ["Field Name", "Value"]
+        table_data = [[field, getattr(self.custom_report, field)] for field in self.custom_report._fields]
+        table_data.insert(0, headers)
+
+        # Tabulate the data
+        table = tabulate(table_data, headers='firstrow', tablefmt='grid')
+
+        # Write the table to the file
+        output_directory = "output"
+        custom_report_path = os.path.join(output_directory, "custom_report.txt")
+        with open(custom_report_path, "w") as file:
+            file.write(table)
 
     def print_package_counts(self):
         sys.stdout.write("\r")
         sys.stdout.write(f"RECEIVED: {self.package_counts[0][0]}:{self.package_counts[0][1]}, {self.package_counts[1][0]}:{self.package_counts[1][1]}, {self.package_counts[2][0]}:{self.package_counts[2][1]}, {self.package_counts[3][0]}:{self.package_counts[3][1]}, {self.package_counts[4][0]}:{self.package_counts[4][1]}, {self.package_counts[5][0]}:{self.package_counts[5][1]}, {self.package_counts[6][0]}:{self.package_counts[6][1]}, {self.package_counts[7][0]}:{self.package_counts[7][1]}")
         sys.stdout.flush()
+
+    def read_watch_list(self):
+        variables = []
+        with open("watch_list.txt", 'r') as file:
+            for line in file:
+                variables.append(line.strip())
+        return variables
+
+    def update_custom_report(self, package):
+        # Get the set of fields in CustomReportsStructure
+        custom_reports_fields = set(self.custom_report._fields)
+
+        # Iterate through the objects
+        for subpackage in package.subpackage_list:
+
+            # Get the set of fields in the object's subpackage_variables named tuple
+            subpackage_variable_fields = set(subpackage.subpackage_variables._fields)
+
+            # Find the intersection of fields (shared fields)
+            shared_fields = custom_reports_fields.intersection(subpackage_variable_fields)
+
+            # Update the shared fields in the CustomReportsStructure instance
+            self.custom_report = self.custom_report._replace(**{field: getattr(subpackage.subpackage_variables, field) for field in shared_fields})
+

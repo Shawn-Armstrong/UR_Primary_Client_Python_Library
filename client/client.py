@@ -32,15 +32,23 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 import socket
 from package import Package
 from package_writer import PackageWriter
+import os
 import argparse
 
 # Parse command-line arguments
 parser = argparse.ArgumentParser(description="Client for receiving robot data")
 parser.add_argument("-i", "--ip_address", default=socket.gethostbyname(socket.gethostname()), help="IP address of the robot (default: local IP address)")
 parser.add_argument("-m", "--max_reports", type=int, default=10, help="Maximum number of reports to write (default: 10)")
+parser.add_argument("-c", "--custom_report", action="store_true", help="Generate custom report based on watch_list.txt")
 
 args = parser.parse_args()
 
+if args.custom_report:
+    if not os.path.exists("watch_list.txt"):
+        print("Error: watch_list.txt not found.")
+        sys.exit(1)
+
+custom_report = args.custom_report
 HOST = args.ip_address
 PORT = 30001
 
@@ -54,14 +62,17 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as clientSocket:
     except socket.error as e:
         print(f"Could not connect to {HOST}:{PORT} Error: {e}")
 
-    writer = PackageWriter(args.max_reports)
+    writer = PackageWriter(args.max_reports, args.custom_report)
     i = 0
     while True:
 
         robot_data = clientSocket.recv(4096)
         new_message = Package(robot_data)
-        
         writer.append_package_to_file(new_message)
+        if writer.custom_reports_enabled == True:
+            writer.append_custom_report(new_message)
+        
+
             
         
     

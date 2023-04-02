@@ -1,0 +1,5 @@
+timestamp
+baudRate
+analogInput1
+InReducedMode
+isRealRobotConnected
