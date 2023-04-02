@@ -50,6 +50,8 @@ Default program arguments are as follows:
 
 ### Custom Reports
 To enable custom reports, run `client.py --custom_report`. When enabled, the client will track every variable listed in `watch_list.txt` and report it in the `../output/custom_report.txt` file. Each variable should be on a separate line within the file and spelled exactly as they appear in their related output package file. Custom reports capture a specified number of entries, `max_reports`, in a single table. When a new entry is added, the oldest entry will be discarded if the table has reached its maximum capacity. Every entry contains the last observed value; if a value has yet to be received, its corresponding field in the table will remain empty. At the beginning of each execution `custom_report.txt` is cleared to ensure a fresh start. 
+
+- See section bugs for known limitations.
   
 ## Implementation Details
 
@@ -68,7 +70,7 @@ This file defines the `Package` class. In principle, this is a container class d
 This file defines the `SubPackage` class and its subclasses. `SubPackage` implements an inheritance hierarchy where every subclass is a subpackage defined in the primary / secondary specification. The hierarchy is designed around named tuples to facilitate table construction while taking advantage of polymorphism.
 
 #### `packagewriter.py`
-This file defines the `PackageWriter` class, which is essentially a writer class that utilizes data from `Package` objects to write to files. The class streamlines file handling by maintaining a separate text file for each package type defined in the specification and writing corresponding `Package` objects to the appropriate file.
+This file defines the `PackageWriter` class, which is essentially a utility class that utilizes data from `Package` objects to write to files. The class streamlines file handling by maintaining a separate text file for each package type defined in the specification and writing corresponding `Package` objects to the appropriate file.
 
 ## Development
 
@@ -88,3 +90,7 @@ This file defines the `PackageWriter` class, which is essentially a writer class
 - [ ] While deserializing a Robot State Message, package type 16, an unknown subpackage type 14 was observed.
   - There may be a potential logic error in class `Package` function `read_subpackages()`.
   - There may be an undocumented subpackage.
+- [ ] Custom reports cannot differentiate between subpackages that share variables names.
+  - Will require modification in `watch_list.txt` format to include a subpackage name. 
+  - Will require modification in class `package_writer.py` function `update_custom_report()` to include additional constraints.
+  - A design concern is that named tuples must be unique which poses a challenge in current approach which may need to be reworked.
