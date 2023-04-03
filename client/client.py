@@ -65,15 +65,28 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as clientSocket:
     writer = PackageWriter(args.max_reports, args.custom_report)
 
     while True:
-
+        
+        # Receives message from UR controller.
         new_message = clientSocket.recv(4096)
 
+        # Creates package based on message received.
         new_package = Package(new_message)
 
+        # Writes subpackage content to file.
         writer.append_package_to_file(new_package)
 
+        # Demonstrates custom reports.
         if writer.custom_reports_enabled == True:
             writer.append_custom_report(new_package)
+
+        # Demonstrates accessing subpackage data.
+        # subpackage = new_package.get_subpackage("Robot Mode Data")
+        # if subpackage is not None:
+        #     print(f"subpackage.subpackage_variables.timestamp={subpackage.subpackage_variables.timestamp}")
+
+        
+
+        
         
 
             
