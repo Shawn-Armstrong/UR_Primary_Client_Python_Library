@@ -337,8 +337,54 @@ class KinematicsInfo(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Kinematics Info"
-        self.subpackage_variables = KinematicsInfoStructure(
-            Message="Not implemented yet.")
+
+        # Controller only sends joint info on change; therefore, adjust accordingly.
+        if self.subpackage_length == 9:
+            self.format_string = ">i"
+        else:
+            self.format_string = ">iiiiiiddddddddddddddddddddddddi"
+
+        self.Structure = KinematicsInfoStructure
+
+
+        if self.subpackage_length == 9: # Controller sends no joint info
+            self.Structure = namedtuple("KinematicsInfoStructureSingle", ["calibration_status"])
+            self.subpackage_variables = self.decode_subpackage_variables()
+        else: # Controller sends joint info
+            field_names = self.create_flattened_fields()
+            self.Structure = namedtuple('FlattenedKinematicsInfo', field_names)
+            self.subpackage_variables = self.decode_subpackage_variables()
+
+    def create_flattened_fields(self):
+        field_names = KinematicsInfoStructure._fields
+        updated_names = []
+
+        #checksum
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[0]}")
+
+        #dhetha
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[1]}")
+        
+        #DHa
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[2]}")
+        
+        #Dhd
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[3]}")
+        
+        #Dhalpha
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[4]}")
+        
+        #calibration_status
+        updated_names.append(f"{field_names[5]}")
+
+        return updated_names
+
+
 
 
 # Fallback mechanism / graceful degradation
@@ -376,13 +422,12 @@ ConfigurationDataStructure = namedtuple("ConfigurationDataStructure", [
 ])
 
 KinematicsInfoStructure = namedtuple("KinematicsInfoStructure", [
-    "Message"
-    # "checksums",
-    # "DHthetas",
-    # "DHas",
-    # "Dhds",
-    # "Dhalphas",
-    # "calibration_status"
+    "checksum",
+    "DHtheta",
+    "DHa",
+    "Dhd",
+    "Dhalpha",
+    "calibration_status"
 ])
 
 AdditionalInfoStructure = namedtuple("AdditionalInfoStructure", [
