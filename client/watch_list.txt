@@ -1,6 +1,1 @@
-timestamp
-baudRate
-analogInput1
-InReducedMode
-isRealRobotConnected
-Shawn
+Robot Mode Data,timestamp

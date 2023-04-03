@@ -135,22 +135,36 @@ class PackageWriter:
         variables = []
         with open("watch_list.txt", 'r') as file:
             for line in file:
-                variables.append(line.strip())
+                package_name, var_name = line.strip().split(',')
+                variables.append(f"{package_name.replace(' ', '_')}_{var_name.replace(' ', '_')}")
         return variables
 
     def update_custom_report(self, package):
         # Get the set of fields in CustomReportsStructure
         custom_reports_fields = set(self.custom_report._fields)
 
-        # Iterate through the objects
         for subpackage in package.subpackage_list:
 
             # Get the set of fields in the object's subpackage_variables named tuple
             subpackage_variable_fields = set(subpackage.subpackage_variables._fields)
 
-            # Find the intersection of fields (shared fields)
-            shared_fields = custom_reports_fields.intersection(subpackage_variable_fields)
+            # Create copy of subpackage name without spaces.
+            subpackage_name = subpackage.subpackage_name.replace(' ', '_')
+
+            # Replace spaces with underscores in field names and prepend the subpackage name
+            updated_field_names = [f"{subpackage_name}_{field.replace(' ', '_')}" for field in subpackage_variable_fields]
+
+            # Create a new namedtuple with the updated field names
+            CopySubpackageVariables = namedtuple(subpackage_name, updated_field_names)
+
+            # Retrieve the original values from subpackage.subpackage_variables
+            original_values = [getattr(subpackage.subpackage_variables, field) for field in subpackage_variable_fields]
+
+            # Create an instance of the new namedtuple with the original values
+            updated_subpackage_variables = CopySubpackageVariables(*original_values)
+
+            # Find the shared fields
+            shared_fields = custom_reports_fields.intersection(updated_field_names)
 
             # Update the shared fields in the CustomReportsStructure instance
-            self.custom_report = self.custom_report._replace(**{field: getattr(subpackage.subpackage_variables, field) for field in shared_fields})
-
+            self.custom_report = self.custom_report._replace(**{field: getattr(updated_subpackage_variables, field) for field in shared_fields})

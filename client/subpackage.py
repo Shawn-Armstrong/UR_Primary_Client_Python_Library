@@ -294,7 +294,7 @@ class KinematicsInfo(SubPackage):
 class UnknownSubPackage(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
-        self.subpackage_name = f"UnknownSubPackage, type={subpackage_type}, length={subpackage_length}"
+        self.subpackage_name = f"UnknownSubPackage type is {subpackage_type} length is {subpackage_length}"
         self.subpackage_variables = UnknownSubPackageStructure(
             Message="Unknown subpackage")
 
