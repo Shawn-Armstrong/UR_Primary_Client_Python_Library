@@ -294,8 +294,44 @@ class ConfigurationData(SubPackage):
     def __init__(self, package_type, subpackage_data, subpackage_length, subpackage_type):
         super().__init__(package_type, subpackage_data, subpackage_length, subpackage_type)
         self.subpackage_name = "Configuration Data"
-        self.subpackage_variables = ConfigurationDataStructure(
-            Message="Not implemented yet.")
+        self.format_string = ">dddddddddddddddddddddddddddddddddddddddddddddddddddddiiii"
+        self.Structure = ConfigurationDataStructure
+        field_names = self.create_flattened_fields()
+        self.Structure = namedtuple('FlattenedConfigurationData', field_names)
+        self.subpackage_variables = self.decode_subpackage_variables()
+        print(self)
+    
+    def create_flattened_fields(self):
+        field_names = ConfigurationDataStructure._fields
+        updated_names = []
+
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[0]}")
+            updated_names.append(f"joint_{i}_{field_names[1]}")
+        
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[2]}")
+            updated_names.append(f"joint_{i}_{field_names[3]}")
+
+        for i in range(4, 9):
+            updated_names.append(f"{field_names[i]}")
+        
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[9]}")
+        
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[10]}")
+        
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[11]}")
+
+        for i in range(1, 7):
+            updated_names.append(f"joint_{i}_{field_names[12]}")
+        
+        for i in range(13, 17):
+            updated_names.append(f"{field_names[i]}")
+
+        return updated_names
 
 
 class KinematicsInfo(SubPackage):
@@ -321,18 +357,23 @@ UnknownSubPackageStructure = namedtuple("ConfigurationDataStructure", [
 ])
 
 ConfigurationDataStructure = namedtuple("ConfigurationDataStructure", [
-    "Message"
-    # "joint_min_limits",
-    # "joint_max_limits",
-    # "joint_max_speeds",
-    # "joint_max_accelerations",
-    # "v_joint_default",
-    # "a_joint_default",
-    # "v_tool_default",
-    # "a_tool_default",
-    # "eq_radius",
-    # "DHas",
-    # "Dhds"
+    "jointMinLimit",
+    "jointMaxLimit",
+    "jointMaxSpeed",
+    "jointMaxAcceleration",
+    "vJointDefault",
+    "aJointDefault",
+    "vToolDefault",
+    "aToolDefault",
+    "eqRadius",
+    "DHa",
+    "Dhd",
+    "DHalpha",
+    "DHtheta",
+    "masterboardVersion",
+    "controllerBoxType",
+    "robotType",
+    "robotSubType"
 ])
 
 KinematicsInfoStructure = namedtuple("KinematicsInfoStructure", [

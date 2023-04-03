@@ -41,6 +41,7 @@ class Package:
         self.subpackage_list = []
         self.received_timestamp = datetime.now()
 
+        # Currently, only robot state messages are implemented.
         if self.type == 16:
             self.read_subpackages(robot_data)
 
