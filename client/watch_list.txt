@@ -1,3 +1,1 @@
 Robot Mode Data,timestamp
-Cartesian Info,X
-Master Board Data,robotVoltage48V

@@ -29,6 +29,7 @@ OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 '''
 import struct
+from datetime import timedelta
 from collections import namedtuple
 from tabulate import tabulate
 
@@ -109,6 +110,22 @@ class RobotModeData(SubPackage):
         self.format_string = '>Q????????BdddB'
         self.Structure = RobotModeDataStructure
         self.subpackage_variables = self.decode_subpackage_variables()
+    
+    # Override necessary for timestamp conversion.
+    def decode_subpackage_variables(self):
+        unpacked_data = struct.unpack(
+            self.format_string,
+            self.subpackage_data[5:self.subpackage_length]
+        )
+
+        # Create a new tuple with the updated timestamp
+        new_timestamp = timedelta(seconds=unpacked_data[0]/1000000)
+        updated_unpacked_data = (new_timestamp,) + unpacked_data[1:]
+
+        # Create the named tuple using the updated unpacked data
+        subpackage_variables = self.Structure._make(updated_unpacked_data)
+
+        return subpackage_variables
 
 
 class JointData(SubPackage):
