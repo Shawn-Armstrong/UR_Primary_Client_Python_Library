@@ -299,7 +299,6 @@ class ConfigurationData(SubPackage):
         field_names = self.create_flattened_fields()
         self.Structure = namedtuple('FlattenedConfigurationData', field_names)
         self.subpackage_variables = self.decode_subpackage_variables()
-        print(self)
     
     def create_flattened_fields(self):
         field_names = ConfigurationDataStructure._fields
