@@ -8,6 +8,9 @@ Program demonstrates client curating robot state messages.
   
 <kbd>![decode_demo](https://user-images.githubusercontent.com/80125540/229012953-e81e12a9-4dad-45cc-80f6-3fb1eacd7df2.gif)</kbd>
 
+### Essential Technical Details
+Universal Robots' provides a primary client interface within their robots, allowing external devices to connect with the robot's software and facilitate the exchange of communication messages. The robots's software periodically sends out serialized messages containing robot state information as outlined in their [primary / secondary specification](https://s3-eu-west-1.amazonaws.com/ur-support-site/16496/ClientInterfaces_Primary.pdf). In short, a sent message consists of a hexadecimal string representing binary data, with robot parameters encoded within it. These strings are divided into sections, with the first section called the "package," starting at byte 0 and all subsequent sections being "subpackages." This client is designed to parse these messages, extract the packages and make them human readable.
+
 ## Usage
 
 ### Requirements 
@@ -49,7 +52,7 @@ Default program arguments are as follows:
   - `--ip_address=<local ip address>`
 
 ### Custom Reports
-To enable custom reports, `python run client.py --custom_report`. When enabled, the client will track every variable listed in `../client/watch_list.txt` and report it in the `../output/custom_report.txt` file. Custom reports consist of a table that captures a specified number of entries, `max_reports`. When a new entry is added, the oldest entry will be discarded if the table has reached its maximum capacity. Every entry contains the last observed value; if a value has not been received yet, its corresponding field in the table will remain empty. At the beginning of each execution, `custom_report.txt` is cleared to ensure a fresh start.
+To enable custom reports, run `python client.py --custom_report`. When enabled, the client will track every variable listed in `../client/watch_list.txt` and report it in the `../output/custom_report.txt` file. Custom reports consist of a table that captures a specified number of entries, `max_reports`. When a new entry is added, the oldest entry will be discarded if the table has reached its maximum capacity. Every new entry contains the last observed value; if a value has not been received yet, its corresponding field in the table will remain empty. At the beginning of each execution, `custom_report.txt` is cleared to ensure a fresh start.
 
 Each variable in `watch_list.txt` should be on a separate line within the file, prepended by their owning subpackage name and separated by a comma. The variable and subpackage name should be spelled exactly as they appear in their related package output file.
 
@@ -77,9 +80,8 @@ Master Board Data,robotVoltage48V
 ## Implementation Details
 
 ### Technical Overview
-Universal Robots provides a primary client interface, allowing external devices to connect with the cobot's software and facilitate the exchange of communication messages. The cobot's software periodically sends out serialized messages containing robot state information as outlined in their primary / secondary specification. In short, a sent message consists of a hexadecimal string representing binary data, with robot parameters encoded within it. These strings are divided into sections, with the first section called the "package," starting at byte 0 and all subsequent sections being "subpackages."
 
-This client is specifically designed to receive these messages, deserialize them, and write the content to files. The client's implementation consists of four main components: `client.py`, `package.py`, `subpackage.py`, and `packagewriter.py`.
+As described in the [Essential Technical Details](https://github.com/Shawn-Armstrong/UR_Primary_Client_Python_Library/edit/main/README.md#essential-technical-details), this client is specifically designed to receive these messages, deserialize them, and write the content to files. The client's implementation consists of four main components: `client.py`, `package.py`, `subpackage.py`, and `packagewriter.py`.
 
 #### `client.py`
 This is the entry point of the program. It connects with the cobot, receives messages and uses them to instantiate a `Package` object. Afterwards, a `PackageWriter` object writes the `Package` to a file.
